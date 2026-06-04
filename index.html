@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IOI Countries — Ranked Medal Table</title>
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --panel: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --border: #d9e1ea;
+      --header-1: #0f172a;
+      --header-2: #1e293b;
+      --accent: #2563eb;
+      --gold-bg: #fff7d6;
+      --gold-fg: #8a5a00;
+      --silver-bg: #edf2f7;
+      --silver-fg: #4b5563;
+      --bronze-bg: #fbe8d8;
+      --bronze-fg: #9a4a00;
+      --total-bg: #e8f4ff;
+      --total-fg: #0b5ea8;
+      --rank-bg: #eef2ff;
+      --rank-fg: #3730a3;
+      --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+      --row-hl: #f8fbff;
+      --sticky-offset: 52px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: linear-gradient(180deg, #eef4ff 0%, var(--bg) 220px);
+      color: var(--text);
+    }
+
+    .wrap {
+      width: min(1300px, calc(100vw - 24px));
+      margin: 20px auto 40px;
+    }
+
+    .hero {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+      padding: 18px 18px 14px;
+      margin-bottom: 14px;
+    }
+
+    .title {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 14px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.35rem, 2vw, 2rem);
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+    }
+
+    .subtext {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 10px;
+      margin-top: 14px;
+      align-items: center;
+    }
+
+    .search {
+      position: relative;
+    }
+
+    .search input {
+      width: 100%;
+      padding: 14px 16px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: #fff;
+      font-size: 1rem;
+      outline: none;
+    }
+
+    .search input:focus {
+      border-color: #7aa7ff;
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+    }
+
+    .pill, .btn {
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 12px 14px;
+      background: #fff;
+      color: var(--text);
+      font-size: 0.92rem;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .btn {
+      cursor: pointer;
+      transition: transform .12s ease, box-shadow .12s ease;
+    }
+
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08); }
+    .btn:active { transform: translateY(0); }
+
+    .table-shell {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .table-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+    }
+
+    .table-top .meta {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .table-scroll {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      min-width: 860px;
+    }
+
+    thead th {
+      position: sticky;
+      z-index: 4;
+      color: #fff;
+      background: var(--header-1);
+      text-align: center;
+      font-weight: 700;
+      border-bottom: 1px solid rgba(255,255,255,0.12);
+      padding: 14px 10px;
+      white-space: nowrap;
+    }
+
+    thead tr:first-child th {
+      top: 0;
+      background: var(--header-1);
+      font-size: 0.96rem;
+    }
+
+    thead tr:nth-child(2) th {
+      top: var(--sticky-offset);
+      background: var(--header-2);
+      font-size: 0.9rem;
+    }
+
+    thead th.rank-head { background: #111827; }
+    thead th.country-head { background: #111827; text-align: left; padding-left: 16px; }
+    thead th.host-head { background: #111827; }
+    thead th.gold-head { background: #7a5b00; }
+    thead th.silver-head { background: #4b5563; }
+    thead th.bronze-head { background: #8a4b16; }
+    thead th.total-head { background: #0b5ea8; }
+
+    tbody td {
+      border-bottom: 1px solid var(--border);
+      padding: 11px 10px;
+      vertical-align: middle;
+      background: #fff;
+    }
+
+    tbody tr:nth-child(even) td { background: #fbfdff; }
+    tbody tr:hover td { background: var(--row-hl); }
+
+    td.rank {
+      text-align: center;
+      font-weight: 800;
+      color: var(--rank-fg);
+      background: var(--rank-bg);
+    }
+
+    td.country {
+      text-align: left;
+      padding-left: 16px;
+      min-width: 230px;
+    }
+
+    td.country a {
+      color: #0f172a;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    td.country a:hover { text-decoration: underline; }
+
+    td.host {
+      text-align: center;
+      color: var(--muted);
+      min-width: 110px;
+    }
+
+    td.num {
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+      min-width: 78px;
+    }
+
+    td.gold { background: var(--gold-bg); color: var(--gold-fg); }
+    td.silver { background: var(--silver-bg); color: var(--silver-fg); }
+    td.bronze { background: var(--bronze-bg); color: var(--bronze-fg); }
+    td.total { background: var(--total-bg); color: var(--total-fg); }
+
+    .empty {
+      padding: 24px 18px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .note {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .highlight {
+      background: rgba(37, 99, 235, 0.09) !important;
+    }
+
+    @media (max-width: 860px) {
+      .controls {
+        grid-template-columns: 1fr;
+      }
+
+      .table-top {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      thead th {
+        font-size: 0.85rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <div class="title">
+        <h1>IOI Countries Medal Table</h1>
+        <div class="pill">Default sort: Gold → Silver → Bronze → Total</div>
+      </div>
+      <div class="controls">
+        <div class="search">
+          <input id="filterInput" type="search" placeholder="Search country" autocomplete="off" />
+        </div>
+        <button class="btn" id="clearBtn" type="button">Clear</button>
+        <div class="pill" id="resultCount">Showing all countries</div>
+      </div>
+      <div class="note">
+        Countries with the same Gold, Silver, Bronze, and Total share the same rank.
+      </div>
+    </section>
+
+    <section class="table-shell">
+      <div class="table-scroll">
+        <table aria-label="IOI countries medal table">
+          <colgroup>
+            <col style="width: 80px;" />
+            <col style="width: 320px;" />
+            <col style="width: 120px;" />
+            <col style="width: 110px;" />
+            <col style="width: 110px;" />
+            <col style="width: 110px;" />
+            <col style="width: 110px;" />
+          </colgroup>
+          <thead>
+            <tr>
+              <th class="rank-head" rowspan="2">Rank</th>
+              <th class="country-head" rowspan="2">Country</th>
+              <th class="host-head" rowspan="2">IOI Host</th>
+              <th class="gold-head" colspan="4">Medals</th>
+            </tr>
+            <tr>
+              <th class="gold-head">Gold</th>
+              <th class="silver-head">Silver</th>
+              <th class="bronze-head">Bronze</th>
+              <th class="total-head">Total</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+        <div id="emptyState" class="empty" style="display:none;">No countries match your search.</div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const DATA = [{"code": "CHN", "country": "China", "host": "2000", "gold": 106, "silver": 28, "bronze": 12, "total": 146, "originalIndex": 16, "rank": 1}, {"code": "USA", "country": "United States of America", "host": "2003", "gold": 69, "silver": 41, "bronze": 17, "total": 127, "originalIndex": 107, "rank": 2}, {"code": "RUS", "country": "Russia", "host": "2016", "gold": 68, "silver": 40, "bronze": 12, "total": 120, "originalIndex": 82, "rank": 3}, {"code": "KOR", "country": "Republic of Korea", "host": "2002", "gold": 53, "silver": 50, "bronze": 28, "total": 131, "originalIndex": 80, "rank": 4}, {"code": "POL", "country": "Poland", "host": "2005", "gold": 45, "silver": 54, "bronze": 36, "total": 135, "originalIndex": 78, "rank": 5}, {"code": "ROU", "country": "Romania", "host": "", "gold": 38, "silver": 60, "bronze": 37, "total": 135, "originalIndex": 81, "rank": 6}, {"code": "JPN", "country": "Japan", "host": "2018", "gold": 38, "silver": 33, "bronze": 10, "total": 81, "originalIndex": 48, "rank": 7}, {"code": "IRN", "country": "Iran", "host": "2017", "gold": 33, "silver": 69, "bronze": 25, "total": 127, "originalIndex": 44, "rank": 8}, {"code": "BGR", "country": "Bulgaria", "host": "1989, 2009", "gold": 29, "silver": 57, "bronze": 45, "total": 131, "originalIndex": 13, "rank": 9}, {"code": "TWN", "country": "Taiwan", "host": "2014", "gold": 26, "silver": 64, "bronze": 30, "total": 120, "originalIndex": 97, "rank": 10}, {"code": "SVK", "country": "Slovakia", "host": "", "gold": 26, "silver": 45, "bronze": 38, "total": 109, "originalIndex": 88, "rank": 11}, {"code": "CAN", "country": "Canada", "host": "2010", "gold": 23, "silver": 36, "bronze": 42, "total": 101, "originalIndex": 14, "rank": 12}, {"code": "VNM", "country": "Vietnam", "host": "", "gold": 22, "silver": 53, "bronze": 55, "total": 130, "originalIndex": 110, "rank": 13}, {"code": "SGP", "country": "Singapore", "host": "2020, 2021", "gold": 18, "silver": 47, "bronze": 43, "total": 108, "originalIndex": 87, "rank": 14}, {"code": "HRV", "country": "Croatia", "host": "2007", "gold": 16, "silver": 46, "bronze": 48, "total": 110, "originalIndex": 19, "rank": 15}, {"code": "BLR", "country": "Belarus", "host": "", "gold": 16, "silver": 42, "bronze": 44, "total": 102, "originalIndex": 8, "rank": 16}, {"code": "HUN", "country": "Hungary", "host": "1996, 2023", "gold": 16, "silver": 38, "bronze": 52, "total": 106, "originalIndex": 40, "rank": 17}, {"code": "CZE", "country": "Czech Republic", "host": "", "gold": 16, "silver": 29, "bronze": 54, "total": 99, "originalIndex": 22, "rank": 18}, {"code": "THA", "country": "Thailand", "host": "2011", "gold": 15, "silver": 39, "bronze": 65, "total": 119, "originalIndex": 99, "rank": 19}, {"code": "DEU", "country": "Germany", "host": "1992", "gold": 15, "silver": 32, "bronze": 52, "total": 99, "originalIndex": 35, "rank": 20}, {"code": "ISR", "country": "Israel", "host": "", "gold": 14, "silver": 34, "bronze": 35, "total": 83, "originalIndex": 46, "rank": 21}, {"code": "UKR", "country": "Ukraine", "host": "", "gold": 13, "silver": 42, "bronze": 52, "total": 107, "originalIndex": 104, "rank": 22}, {"code": "SWE", "country": "Sweden", "host": "1994", "gold": 13, "silver": 30, "bronze": 42, "total": 85, "originalIndex": 94, "rank": 23}, {"code": "AUS", "country": "Australia", "host": "2013", "gold": 11, "silver": 33, "bronze": 42, "total": 86, "originalIndex": 4, "rank": 24}, {"code": "LVA", "country": "Latvia", "host": "", "gold": 8, "silver": 25, "bronze": 55, "total": 88, "originalIndex": 54, "rank": 25}, {"code": "GBR", "country": "United Kingdom", "host": "", "gold": 8, "silver": 22, "bronze": 49, "total": 79, "originalIndex": 106, "rank": 26}, {"code": "HKG", "country": "Hong Kong, China", "host": "", "gold": 7, "silver": 37, "bronze": 51, "total": 95, "originalIndex": 39, "rank": 27}, {"code": "GEO", "country": "Georgia", "host": "", "gold": 7, "silver": 13, "bronze": 44, "total": 64, "originalIndex": 33, "rank": 28}, {"code": "IDN", "country": "Indonesia", "host": "2022", "gold": 5, "silver": 37, "bronze": 47, "total": 89, "originalIndex": 43, "rank": 29}, {"code": "FIN", "country": "Finland", "host": "2001", "gold": 5, "silver": 28, "bronze": 48, "total": 81, "originalIndex": 30, "rank": 30}, {"code": "EST", "country": "Estonia", "host": "", "gold": 5, "silver": 20, "bronze": 43, "total": 68, "originalIndex": 29, "rank": 31}, {"code": "TUR", "country": "Türkiye", "host": "1999", "gold": 4, "silver": 29, "bronze": 53, "total": 86, "originalIndex": 102, "rank": 32}, {"code": "NLD", "country": "Netherlands", "host": "1995", "gold": 4, "silver": 19, "bronze": 43, "total": 66, "originalIndex": 69, "rank": 33}, {"code": "ZAF", "country": "South Africa", "host": "1997", "gold": 4, "silver": 13, "bronze": 48, "total": 65, "originalIndex": 90, "rank": 34}, {"code": "KAZ", "country": "Kazakhstan", "host": "2015", "gold": 3, "silver": 30, "bronze": 42, "total": 75, "originalIndex": 50, "rank": 35}, {"code": "IND", "country": "India", "host": "", "gold": 3, "silver": 25, "bronze": 42, "total": 70, "originalIndex": 42, "rank": 36}, {"code": "FRA", "country": "France", "host": "", "gold": 3, "silver": 21, "bronze": 42, "total": 66, "originalIndex": 31, "rank": 37}, {"code": "BRA", "country": "Brazil", "host": "", "gold": 3, "silver": 20, "bronze": 41, "total": 64, "originalIndex": 12, "rank": 38}, {"code": "ARG", "country": "Argentina", "host": "1993", "gold": 3, "silver": 9, "bronze": 26, "total": 38, "originalIndex": 2, "rank": 39}, {"code": "LKA", "country": "Sri Lanka", "host": "", "gold": 3, "silver": 7, "bronze": 17, "total": 27, "originalIndex": 93, "rank": 40}, {"code": "AUT", "country": "Austria", "host": "", "gold": 3, "silver": 6, "bronze": 30, "total": 39, "originalIndex": 5, "rank": 41}, {"code": "DNK", "country": "Denmark", "host": "", "gold": 3, "silver": 6, "bronze": 24, "total": 33, "originalIndex": 24, "rank": 42}, {"code": "CSK", "country": "Czechoslovakia", "host": "", "gold": 3, "silver": 4, "bronze": 2, "total": 9, "originalIndex": 23, "rank": 43}, {"code": "SUN", "country": "Soviet Union", "host": "1990", "gold": 3, "silver": 4, "bronze": 1, "total": 8, "originalIndex": 91, "rank": 44}, {"code": "LTU", "country": "Lithuania", "host": "", "gold": 2, "silver": 31, "bronze": 52, "total": 85, "originalIndex": 56, "rank": 45}, {"code": "ITA", "country": "Italy", "host": "2012", "gold": 2, "silver": 26, "bronze": 44, "total": 72, "originalIndex": 47, "rank": 46}, {"code": "SCG", "country": "Serbia and Montenegro", "host": "", "gold": 2, "silver": 15, "bronze": 17, "total": 34, "originalIndex": 86, "rank": 47}, {"code": "CHE", "country": "Switzerland", "host": "", "gold": 2, "silver": 11, "bronze": 37, "total": 50, "originalIndex": 95, "rank": 48}, {"code": "MYS", "country": "Malaysia", "host": "", "gold": 2, "silver": 6, "bronze": 17, "total": 25, "originalIndex": 60, "rank": 49}, {"code": "SRB", "country": "Serbia", "host": "", "gold": 1, "silver": 22, "bronze": 36, "total": 59, "originalIndex": 85, "rank": 50}, {"code": "ARM", "country": "Armenia", "host": "", "gold": 1, "silver": 8, "bronze": 37, "total": 46, "originalIndex": 3, "rank": 51}, {"code": "ESP", "country": "Spain", "host": "", "gold": 1, "silver": 8, "bronze": 21, "total": 30, "originalIndex": 92, "rank": 52}, {"code": "SVN", "country": "Slovenia", "host": "", "gold": 1, "silver": 7, "bronze": 29, "total": 37, "originalIndex": 89, "rank": 53}, {"code": "BGD", "country": "Bangladesh", "host": "", "gold": 1, "silver": 7, "bronze": 25, "total": 33, "originalIndex": 7, "rank": 54}, {"code": "IRL", "country": "Ireland", "host": "", "gold": 1, "silver": 5, "bronze": 15, "total": 21, "originalIndex": 45, "rank": 55}, {"code": "MEX", "country": "Mexico", "host": "2006", "gold": 1, "silver": 3, "bronze": 28, "total": 32, "originalIndex": 63, "rank": 56}, {"code": "NOR", "country": "Norway", "host": "", "gold": 1, "silver": 3, "bronze": 11, "total": 15, "originalIndex": 73, "rank": 57}, {"code": "YUG", "country": "Yugoslavia", "host": "", "gold": 1, "silver": 3, "bronze": 1, "total": 5, "originalIndex": 111, "rank": 58}, {"code": "MNG", "country": "Mongolia", "host": "", "gold": 1, "silver": 2, "bronze": 11, "total": 14, "originalIndex": 65, "rank": 59}, {"code": "TKM", "country": "Turkmenistan", "host": "", "gold": 1, "silver": 0, "bronze": 6, "total": 7, "originalIndex": 103, "rank": 60}, {"code": "MDA", "country": "Moldova", "host": "", "gold": 0, "silver": 8, "bronze": 32, "total": 40, "originalIndex": 64, "rank": 61}, {"code": "CUB", "country": "Cuba", "host": "", "gold": 0, "silver": 8, "bronze": 31, "total": 39, "originalIndex": 20, "rank": 62}, {"code": "EGY", "country": "Egypt", "host": "2008, 2024", "gold": 0, "silver": 8, "bronze": 28, "total": 36, "originalIndex": 27, "rank": 63}, {"code": "MAC", "country": "Macao, China", "host": "", "gold": 0, "silver": 7, "bronze": 19, "total": 26, "originalIndex": 58, "rank": 64}, {"code": "GRC", "country": "Greece", "host": "1991, 2004", "gold": 0, "silver": 6, "bronze": 33, "total": 39, "originalIndex": 37, "rank": 65}, {"code": "MKD", "country": "North Macedonia", "host": "", "gold": 0, "silver": 6, "bronze": 24, "total": 30, "originalIndex": 72, "rank": 66}, {"code": "PHL", "country": "Philippines", "host": "", "gold": 0, "silver": 4, "bronze": 15, "total": 19, "originalIndex": 77, "rank": 67}, {"code": "KGZ", "country": "Kyrgyzstan", "host": "", "gold": 0, "silver": 3, "bronze": 20, "total": 23, "originalIndex": 53, "rank": 68}, {"code": "BEL", "country": "Belgium", "host": "", "gold": 0, "silver": 3, "bronze": 13, "total": 16, "originalIndex": 9, "rank": 69}, {"code": "TJK", "country": "Tajikistan", "host": "", "gold": 0, "silver": 3, "bronze": 6, "total": 9, "originalIndex": 98, "rank": 70}, {"code": "DDR", "country": "German Democratic Republic", "host": "", "gold": 0, "silver": 3, "bronze": 0, "total": 3, "originalIndex": 34, "rank": 71}, {"code": "NZL", "country": "New Zealand", "host": "", "gold": 0, "silver": 2, "bronze": 25, "total": 27, "originalIndex": 70, "rank": 72}, {"code": "SYR", "country": "Syria", "host": "", "gold": 0, "silver": 2, "bronze": 16, "total": 18, "originalIndex": 96, "rank": 73}, {"code": "AZE", "country": "Azerbaijan", "host": "2019", "gold": 0, "silver": 2, "bronze": 14, "total": 16, "originalIndex": 6, "rank": 74}, {"code": "CYP", "country": "Cyprus", "host": "", "gold": 0, "silver": 2, "bronze": 11, "total": 13, "originalIndex": 21, "rank": 75}, {"code": "COL", "country": "Colombia", "host": "", "gold": 0, "silver": 2, "bronze": 10, "total": 12, "originalIndex": 17, "rank": 76}, {"code": "PRT", "country": "Portugal", "host": "1998", "gold": 0, "silver": 2, "bronze": 9, "total": 11, "originalIndex": 79, "rank": 77}, {"code": "LUX", "country": "Luxembourg", "host": "", "gold": 0, "silver": 1, "bronze": 15, "total": 16, "originalIndex": 57, "rank": 78}, {"code": "BIH", "country": "Bosnia and Herzegovina", "host": "", "gold": 0, "silver": 1, "bronze": 10, "total": 11, "originalIndex": 11, "rank": 79}, {"code": "JOR", "country": "Jordan", "host": "", "gold": 0, "silver": 1, "bronze": 4, "total": 5, "originalIndex": 49, "rank": 80}, {"code": "UZB", "country": "Uzbekistan", "host": "", "gold": 0, "silver": 1, "bronze": 4, "total": 5, "originalIndex": 108, "rank": 80}, {"code": "SAU", "country": "Saudi Arabia", "host": "", "gold": 0, "silver": 0, "bronze": 7, "total": 7, "originalIndex": 84, "rank": 82}, {"code": "PAK", "country": "Pakistan", "host": "", "gold": 0, "silver": 0, "bronze": 6, "total": 6, "originalIndex": 74, "rank": 83}, {"code": "CHL", "country": "Chile", "host": "", "gold": 0, "silver": 0, "bronze": 4, "total": 4, "originalIndex": 15, "rank": 84}, {"code": "ISL", "country": "Iceland", "host": "", "gold": 0, "silver": 0, "bronze": 3, "total": 3, "originalIndex": 41, "rank": 85}, {"code": "MAR", "country": "Morocco", "host": "", "gold": 0, "silver": 0, "bronze": 3, "total": 3, "originalIndex": 67, "rank": 85}, {"code": "TTO", "country": "Trinidad and Tobago", "host": "", "gold": 0, "silver": 0, "bronze": 3, "total": 3, "originalIndex": 100, "rank": 85}, {"code": "MLT", "country": "Malta", "host": "", "gold": 0, "silver": 0, "bronze": 2, "total": 2, "originalIndex": 61, "rank": 88}, {"code": "TUN", "country": "Tunisia", "host": "", "gold": 0, "silver": 0, "bronze": 2, "total": 2, "originalIndex": 101, "rank": 88}, {"code": "DZA", "country": "Algeria", "host": "", "gold": 0, "silver": 0, "bronze": 1, "total": 1, "originalIndex": 1, "rank": 90}, {"code": "MNE", "country": "Montenegro", "host": "", "gold": 0, "silver": 0, "bronze": 1, "total": 1, "originalIndex": 66, "rank": 90}, {"code": "PSE", "country": "Palestine", "host": "", "gold": 0, "silver": 0, "bronze": 1, "total": 1, "originalIndex": 75, "rank": 90}, {"code": "PER", "country": "Peru", "host": "", "gold": 0, "silver": 0, "bronze": 1, "total": 1, "originalIndex": 76, "rank": 90}, {"code": "VEN", "country": "Venezuela", "host": "", "gold": 0, "silver": 0, "bronze": 1, "total": 1, "originalIndex": 109, "rank": 90}, {"code": "ALB", "country": "Albania", "host": "", "gold": 0, "silver": 0, "bronze": 0, "total": 0, "originalIndex": 0, "rank": 95}, {"code": "BOL", "country": "Bolivia", "host": "2025", "gold": 0, "silver": 0, "bronze": 0, "total": 0, "originalIndex": 10, "rank": 95}, {"code": "CRI", "country": "Costa Rica", "host": "", "gold": 0, "silver": 0, "bronze": 0, "total": 0, "originalIndex": 18, "rank": 95}, {"code": "DOM", "country": "Dominican Republic", "host": "", "gold": 0, "silver": 0, "bronze": 0, "total": 0, "originalIndex": 25, "rank": 95}, {"code": "ECU", "country": "Ecuador", "host": "", "gold": 0, "silver": 0, "bronze": 0, "total": 0, "originalIndex": 26, "rank": 95}, {"code": "SLV", "country": "El Salvador", "host": "", "gold": 0, "silver": 0, "bronze": 0, "total": 0, "originalIndex": 28, "rank": 95}, {"code": "GAB", "country": "Gabon", "host": "", "gold": 0, "silver": 0, "bronze": 0, "total": 0, "originalIndex": 32, "rank": 95}, {"code": "GHA", "country": "Ghana", "host": "", "gold": 0, "silver": 0, "bronze": 0, "total": 0, "originalIndex": 36, "rank": 95}, {"code": "HND", "country": "Honduras", "host": "", "gold": 0, "silver": 0, "bronze": 0, "total": 0, "originalIndex": 38, "rank": 95}, {"code": "KEN", "country": "Kenya", "host": "", "gold": 0, "silver": 0, "bronze": 0, "total": 0, "originalIndex": 51, "rank": 95}, {"code": "KWT", "country": "Kuwait", "host": "", "gold": 0, "silver": 0, "bronze": 0, "total": 0, "originalIndex": 52, "rank": 95}, {"code": "LBY", "country": "Libya", "host": "", "gold": 0, "silver": 0, "bronze": 0, "total": 0, "originalIndex": 55, "rank": 95}, {"code": "MDG", "country": "Madagascar", "host": "", "gold": 0, "silver": 0, "bronze": 0, "total": 0, "originalIndex": 59, "rank": 95}, {"code": "MUS", "country": "Mauritius", "host": "", "gold": 0, "silver": 0, "bronze": 0, "total": 0, "originalIndex": 62, "rank": 95}, {"code": "MOZ", "country": "Mozambique", "host": "", "gold": 0, "silver": 0, "bronze": 0, "total": 0, "originalIndex": 68, "rank": 95}, {"code": "NGA", "country": "Nigeria", "host": "", "gold": 0, "silver": 0, "bronze": 0, "total": 0, "originalIndex": 71, "rank": 95}, {"code": "RWA", "country": "Rwanda", "host": "", "gold": 0, "silver": 0, "bronze": 0, "total": 0, "originalIndex": 83, "rank": 95}, {"code": "ARE", "country": "United Arab Emirates", "host": "", "gold": 0, "silver": 0, "bronze": 0, "total": 0, "originalIndex": 105, "rank": 95}, {"code": "ZWE", "country": "Zimbabwe", "host": "", "gold": 0, "silver": 0, "bronze": 0, "total": 0, "originalIndex": 112, "rank": 95}];
+
+    const tbody = document.getElementById('tbody');
+    const filterInput = document.getElementById('filterInput');
+    const clearBtn = document.getElementById('clearBtn');
+    const resultCount = document.getElementById('resultCount');
+    const emptyState = document.getElementById('emptyState');
+
+    function escapeHtml(text) {
+      return String(text)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    }
+
+    function setStickyOffset() {
+      const firstHeaderRow = document.querySelector('thead tr:first-child');
+      if (!firstHeaderRow) return;
+      const h = firstHeaderRow.getBoundingClientRect().height;
+      document.documentElement.style.setProperty('--sticky-offset', h + 'px');
+    }
+
+    function renderTable() {
+      const q = filterInput.value.trim().toLowerCase();
+      const filtered = q
+        ? DATA.filter(row => {
+            const hay = `${row.country} ${row.code} ${row.host}`.toLowerCase();
+            return hay.includes(q);
+          })
+        : DATA;
+
+      tbody.innerHTML = filtered.map(row => {
+        const countryUrl = `https://stats.ioinformatics.org/countries/${row.code}`;
+        return `
+          <tr>
+            <td class="rank">${row.rank}</td>
+            <td class="country"><a href="${countryUrl}" target="_blank" rel="noopener noreferrer">${escapeHtml(row.country)}</a></td>
+            <td class="host">${row.host ? escapeHtml(row.host) : '&mdash;'}</td>
+            <td class="num gold">${row.gold}</td>
+            <td class="num silver">${row.silver}</td>
+            <td class="num bronze">${row.bronze}</td>
+            <td class="num total">${row.total}</td>
+          </tr>
+        `;
+      }).join('');
+
+      const total = DATA.length;
+      const shown = filtered.length;
+      resultCount.textContent = q
+        ? `Showing ${shown} of ${total} countries`
+        : `Showing all ${total} countries`;
+
+      emptyState.style.display = shown ? 'none' : 'block';
+    }
+
+    filterInput.addEventListener('input', renderTable);
+    clearBtn.addEventListener('click', () => {
+      filterInput.value = '';
+      filterInput.focus();
+      renderTable();
+    });
+
+    window.addEventListener('resize', setStickyOffset);
+    window.addEventListener('load', () => {
+      setStickyOffset();
+      renderTable();
+    });
+    setStickyOffset();
+    renderTable();
+  </script>
+</body>
+</html>
